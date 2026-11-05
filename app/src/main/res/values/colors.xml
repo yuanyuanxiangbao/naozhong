@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="bg">#FFF7F7FA</color>
+    <color name="surface">#FFFFFFFF</color>
+    <color name="primary">#FF5B4CDB</color>
+    <color name="primary_dark">#FF3A2FB0</color>
+    <color name="text_primary">#FF1B1B1F</color>
+    <color name="text_secondary">#FF6B6B76</color>
+    <color name="ring_bg">#FF0E0B1F</color>
+    <color name="ring_text">#FFF5F3FF</color>
+    <color name="danger">#FFD64545</color>
+    <color name="success">#FF2E9E5B</color>
+</resources>

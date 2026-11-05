@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <application>
+        <!-- 仅 debug 包开放，方便 adb 直接打开答题页做功能验证 -->
+        <activity
+            android:name=".AlarmRingActivity"
+            android:exported="true"
+            tools:replace="android:exported" />
+    </application>
+</manifest>
