@@ -60,6 +60,12 @@ class PermissionActivity : AppCompatActivity() {
         ) { PermissionHelper.openFullScreen(this) }
 
         addRow(
+            getString(R.string.overlay_permission),
+            getString(R.string.overlay_permission_desc),
+            !PermissionHelper.needsOverlay(this),
+        ) { PermissionHelper.openOverlay(this) }
+
+        addRow(
             getString(R.string.battery_optimization),
             getString(R.string.battery_optimization_desc),
             !PermissionHelper.needsBattery(this),

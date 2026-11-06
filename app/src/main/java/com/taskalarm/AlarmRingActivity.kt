@@ -17,6 +17,10 @@ class AlarmRingActivity : AppCompatActivity() {
         const val EXTRA_WINDOW = "alarm_window"
         private const val TYPE_MATH = 1
         private const val TYPE_SHAKE = 2
+
+        // 响铃服务据此判断答题页是否真的在前台，没在前台就继续尝试拉起
+        @Volatile
+        var visible = false
     }
 
     private lateinit var taskContainer: LinearLayout
@@ -54,6 +58,16 @@ class AlarmRingActivity : AppCompatActivity() {
             }
         })
         loadAlarm(intent)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        visible = true
+    }
+
+    override fun onPause() {
+        visible = false
+        super.onPause()
     }
 
     override fun onNewIntent(intent: Intent) {

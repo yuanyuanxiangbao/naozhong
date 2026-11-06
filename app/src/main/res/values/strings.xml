@@ -45,6 +45,8 @@
     <string name="notifications_desc">用于显示正在响铃的提醒</string>
     <string name="fullscreen_intent">全屏通知</string>
     <string name="fullscreen_intent_desc">锁屏时直接弹出响铃页面</string>
+    <string name="overlay_permission">后台弹出界面</string>
+    <string name="overlay_permission_desc">没有它，正在使用其他应用时答题页可能弹不出来</string>
     <string name="battery_optimization">忽略电池优化</string>
     <string name="battery_optimization_desc">防止后台被杀导致闹钟静音</string>
     <string name="vendor_guide">厂商后台限制</string>

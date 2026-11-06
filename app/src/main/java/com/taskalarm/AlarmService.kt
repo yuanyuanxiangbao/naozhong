@@ -16,6 +16,7 @@ import android.os.Looper
 import android.os.PowerManager
 import android.os.VibrationEffect
 import android.os.Vibrator
+import android.provider.Settings
 
 class AlarmService : Service() {
     companion object {
@@ -35,6 +36,16 @@ class AlarmService : Service() {
     private var currentRound = 0
     private var currentWindow = -1L
     private var screenLock: PowerManager.WakeLock? = null
+    private var screenLaunchLogged = false
+
+    private val screenGuard = object : Runnable {
+        override fun run() {
+            if (player != null && currentId >= 0 && !AlarmRingActivity.visible) {
+                launchRingScreen(currentId, currentRound)
+            }
+            handler.postDelayed(this, 5000)
+        }
+    }
 
     // debug 包用于真机自测时压低音量，release 包才强制拉满，避免测试时吵到用户
     private val quietMode: Boolean by lazy {
@@ -99,6 +110,7 @@ class AlarmService : Service() {
         currentId = id
         currentRound = round
         currentWindow = window
+        screenLaunchLogged = false
         val detail = if (round > 0) {
             "%02d:%02d 第 %d 次复查".format(alarm.hour, alarm.minute, round)
         } else {
@@ -112,6 +124,8 @@ class AlarmService : Service() {
         handler.removeCallbacks(volumeGuard)
         handler.post(volumeGuard)
         launchRingScreen(id, round)
+        handler.removeCallbacks(screenGuard)
+        handler.postDelayed(screenGuard, 5000)
     }
 
     // 屏幕熄灭时仅靠全屏通知不一定点亮屏幕，响铃期间持有一个亮屏锁
@@ -140,6 +154,16 @@ class AlarmService : Service() {
             putExtra(AlarmRingActivity.EXTRA_WINDOW, AlarmStore.ringingWindow(this@AlarmService))
             putExtra(EXTRA_ROUND, round)
         }
+        // 有悬浮窗权限时后台启动 Activity 不受限制，这是正在用别的应用时也能弹页的关键
+        if (Settings.canDrawOverlays(this)) {
+            try {
+                startActivity(intent)
+                logLaunchOnce("拉起答题页", "悬浮窗权限")
+                return
+            } catch (e: Exception) {
+                // 继续走下面的兜底
+            }
+        }
         // Android 14 起后台弹页会被 BAL 拦截；创建者与发送者要分别声明放行，
         // 创建时只能设置创建者选项，发送者的选项必须通过 send 传入
         val launched = if (Build.VERSION.SDK_INT >= 34) {
@@ -157,13 +181,22 @@ class AlarmService : Service() {
         } else {
             false
         }
-        if (!launched) {
-            try {
-                startActivity(intent)
-            } catch (e: Exception) {
-                // 仍然失败时依赖常驻通知，用户点击即可进入答题页
-            }
+        if (launched) {
+            logLaunchOnce("拉起答题页", "PendingIntent")
+            return
         }
+        try {
+            startActivity(intent)
+            logLaunchOnce("拉起答题页", "普通启动")
+        } catch (e: Exception) {
+            logLaunchOnce("拉起答题页失败", "缺少悬浮窗权限，请到权限检查开启")
+        }
+    }
+
+    private fun logLaunchOnce(event: String, detail: String) {
+        if (screenLaunchLogged) return
+        DiagLog.record(this, event, detail)
+        screenLaunchLogged = true
     }
 
     private fun handleTaskDone(intent: Intent) {
@@ -288,6 +321,7 @@ class AlarmService : Service() {
 
     private fun stopRinging() {
         handler.removeCallbacks(volumeGuard)
+        handler.removeCallbacks(screenGuard)
         restoreAlarmVolume()
         stopSound()
         releaseScreenLock()
@@ -308,6 +342,7 @@ class AlarmService : Service() {
 
     override fun onDestroy() {
         handler.removeCallbacks(volumeGuard)
+        handler.removeCallbacks(screenGuard)
         restoreAlarmVolume()
         stopSound()
         releaseScreenLock()

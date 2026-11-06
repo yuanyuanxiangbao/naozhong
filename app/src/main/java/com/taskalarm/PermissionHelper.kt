@@ -34,6 +34,8 @@ object PermissionHelper {
             false
         }
 
+    fun needsOverlay(context: Context): Boolean = !Settings.canDrawOverlays(context)
+
     fun needsBattery(context: Context): Boolean =
         !context.getSystemService(PowerManager::class.java)
             .isIgnoringBatteryOptimizations(context.packageName)
@@ -43,6 +45,7 @@ object PermissionHelper {
             needsExactAlarm(context),
             needsNotifications(context),
             needsFullScreen(context),
+            needsOverlay(context),
             needsBattery(context),
         ).count { it }
 
@@ -64,6 +67,19 @@ object PermissionHelper {
             activity.startActivity(
                 Intent(
                     Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT,
+                    Uri.parse("package:${activity.packageName}")
+                )
+            )
+        } catch (e: Exception) {
+            openAppDetails(activity)
+        }
+    }
+
+    fun openOverlay(activity: Activity) {
+        try {
+            activity.startActivity(
+                Intent(
+                    Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
                     Uri.parse("package:${activity.packageName}")
                 )
             )
