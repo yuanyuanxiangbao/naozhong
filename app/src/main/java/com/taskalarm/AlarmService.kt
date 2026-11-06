@@ -20,9 +20,10 @@ import android.os.Vibrator
 class AlarmService : Service() {
     companion object {
         const val ACTION_START = "com.taskalarm.service.START"
-        const val ACTION_STOP = "com.taskalarm.service.STOP"
+        const val ACTION_TASK_DONE = "com.taskalarm.service.TASK_DONE"
         const val EXTRA_ID = "alarm_id"
         const val EXTRA_WINDOW = "alarm_window"
+        const val EXTRA_ROUND = "alarm_round"
     }
 
     private var player: MediaPlayer? = null
@@ -31,6 +32,8 @@ class AlarmService : Service() {
     private var focusRequest: AudioFocusRequest? = null
     private var originalAlarmVolume = -1
     private var currentId = -1
+    private var currentRound = 0
+    private var currentWindow = -1L
     private var screenLock: PowerManager.WakeLock? = null
 
     // debug 包用于真机自测时压低音量，release 包才强制拉满，避免测试时吵到用户
@@ -54,42 +57,61 @@ class AlarmService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
-            ACTION_STOP -> {
-                stopRinging()
+            ACTION_TASK_DONE -> {
+                handleTaskDone(intent)
                 return START_NOT_STICKY
             }
 
             ACTION_START -> {
                 val id = intent.getIntExtra(EXTRA_ID, -1)
-                if (id >= 0) startRinging(id)
+                if (id >= 0) {
+                    startRinging(
+                        id,
+                        intent.getIntExtra(EXTRA_ROUND, 0),
+                        intent.getLongExtra(EXTRA_WINDOW, -1L),
+                    )
+                }
             }
 
             null -> {
                 val id = AlarmStore.ringingId(this)
-                if (id >= 0) startRinging(id) else stopSelf()
+                if (id >= 0) {
+                    val round = if (AlarmStore.confirmId(this) == id) AlarmStore.confirmRound(this) else 0
+                    startRinging(id, round, AlarmStore.ringingWindow(this))
+                } else {
+                    stopSelf()
+                }
             }
         }
         return START_STICKY
     }
 
-    private fun startRinging(id: Int) {
+    private fun startRinging(id: Int, round: Int, window: Long) {
         val alarm = AlarmStore.find(this, id)
         if (alarm == null) {
             stopSelf()
             return
         }
         if (currentId == id && player != null) {
-            NotificationHelper.showRingingNotification(this, alarm)
+            NotificationHelper.showRingingNotification(this, alarm, round)
             return
         }
         currentId = id
-        DiagLog.record(this, "开始响铃", "%02d:%02d %s".format(alarm.hour, alarm.minute, alarm.label.ifBlank { "无标签" }))
+        currentRound = round
+        currentWindow = window
+        val detail = if (round > 0) {
+            "%02d:%02d 第 %d 次复查".format(alarm.hour, alarm.minute, round)
+        } else {
+            "%02d:%02d %s".format(alarm.hour, alarm.minute, alarm.label.ifBlank { "无标签" })
+        }
+        DiagLog.record(this, "开始响铃", detail)
         acquireScreenLock()
-        startForeground(NotificationHelper.NOTIFICATION_ID, NotificationHelper.ringingNotification(this, alarm))
+        NotificationHelper.cancelConfirm(this)
+        startForeground(NotificationHelper.NOTIFICATION_ID, NotificationHelper.ringingNotification(this, alarm, round))
         startSound(alarm)
         handler.removeCallbacks(volumeGuard)
         handler.post(volumeGuard)
-        launchRingScreen(id)
+        launchRingScreen(id, round)
     }
 
     // 屏幕熄灭时仅靠全屏通知不一定点亮屏幕，响铃期间持有一个亮屏锁
@@ -111,11 +133,12 @@ class AlarmService : Service() {
         }
     }
 
-    private fun launchRingScreen(id: Int) {
+    private fun launchRingScreen(id: Int, round: Int) {
         val intent = Intent(this, AlarmRingActivity::class.java).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
             putExtra(AlarmRingActivity.EXTRA_ID, id)
             putExtra(AlarmRingActivity.EXTRA_WINDOW, AlarmStore.ringingWindow(this@AlarmService))
+            putExtra(EXTRA_ROUND, round)
         }
         // Android 14 起后台弹页会被 BAL 拦截；创建者与发送者要分别声明放行，
         // 创建时只能设置创建者选项，发送者的选项必须通过 send 传入
@@ -141,6 +164,42 @@ class AlarmService : Service() {
                 // 仍然失败时依赖常驻通知，用户点击即可进入答题页
             }
         }
+    }
+
+    private fun handleTaskDone(intent: Intent) {
+        val id = intent.getIntExtra(EXTRA_ID, currentId)
+        val round = intent.getIntExtra(EXTRA_ROUND, currentRound)
+        val alarm = if (id >= 0) AlarmStore.find(this, id) else null
+        if (alarm == null) {
+            stopRinging()
+            return
+        }
+        val step = ConfirmPlan.next(alarm, round, AlarmStore.confirmLeft(this))
+        if (step == null) {
+            finishAlarm(id, alarm)
+            return
+        }
+        val now = System.currentTimeMillis()
+        val window = currentWindow.takeIf { it > 0 } ?: now
+        val deadline = ConfirmPlan.deadline(now, alarm)
+        AlarmStore.setConfirm(this, id, window, deadline, step.left, step.round)
+        AlarmScheduler.scheduleFollowUp(this, id, step.round, window, deadline)
+        NotificationHelper.showConfirm(this, alarm, step.round, deadline)
+        DiagLog.record(
+            this, "进入起床复查",
+            "%02d:%02d 第 %d 次，%d 分钟后".format(
+                alarm.hour, alarm.minute, step.round, alarm.confirmMinutes
+            )
+        )
+        stopRinging()
+    }
+
+    private fun finishAlarm(id: Int, alarm: Alarm) {
+        NotificationHelper.cancelConfirm(this)
+        AlarmStore.clearConfirm(this)
+        if (alarm.isTest) AlarmStore.delete(this, id)
+        DiagLog.record(this, "复查结束", "id=$id，闹钟关闭")
+        stopRinging()
     }
 
     private fun startSound(alarm: Alarm) {

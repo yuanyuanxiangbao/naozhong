@@ -7,6 +7,7 @@ import android.content.Intent
 class AlarmReceiver : BroadcastReceiver() {
     companion object {
         const val ACTION_FIRE = "com.taskalarm.FIRE"
+        const val ACTION_FOLLOW_UP = "com.taskalarm.FOLLOW_UP"
         const val ACTION_RESTORE = "com.taskalarm.RESTORE"
         const val EXTRA_ID = "alarm_id"
         const val EXTRA_WINDOW = "alarm_window"
@@ -15,12 +16,14 @@ class AlarmReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         when (intent.action) {
             ACTION_FIRE -> handleFire(context, intent)
+            ACTION_FOLLOW_UP -> handleFollowUp(context, intent)
             ACTION_RESTORE -> {
                 val id = AlarmStore.ringingId(context)
                 if (id < 0) return
                 val alarm = AlarmStore.find(context, id) ?: return
+                val round = if (AlarmStore.confirmId(context) == id) AlarmStore.confirmRound(context) else 0
                 NotificationHelper.ensureChannels(context)
-                NotificationHelper.showRingingNotification(context, alarm)
+                NotificationHelper.showRingingNotification(context, alarm, round)
             }
         }
     }
@@ -62,5 +65,25 @@ class AlarmReceiver : BroadcastReceiver() {
         }
 
         AlarmScheduler.trigger(context, id, window)
+    }
+
+    private fun handleFollowUp(context: Context, intent: Intent) {
+        val id = intent.getIntExtra(EXTRA_ID, -1)
+        val round = intent.getIntExtra(AlarmService.EXTRA_ROUND, 0)
+        val window = intent.getLongExtra(EXTRA_WINDOW, -1L)
+        if (id < 0 || round <= 0 || window <= 0) return
+        if (AlarmStore.isRinging(context)) {
+            DiagLog.record(context, "忽略复查", "id=$id 已在响铃")
+            return
+        }
+        val valid = AlarmStore.confirmId(context) == id &&
+            AlarmStore.confirmLeft(context) > 0 &&
+            AlarmStore.confirmRound(context) == round
+        if (!valid) {
+            DiagLog.record(context, "忽略复查", "id=$id 第 $round 次状态失效")
+            return
+        }
+        DiagLog.record(context, "收到复查广播", "id=$id 第 $round 次")
+        AlarmScheduler.triggerFollowUp(context, id, round, window)
     }
 }

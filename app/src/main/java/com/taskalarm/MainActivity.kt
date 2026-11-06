@@ -86,6 +86,9 @@ class MainActivity : AppCompatActivity() {
             mathEnabled = true,
             mathCount = 1,
             mathHard = true,
+            confirmEnabled = true,
+            confirmMinutes = 1,
+            confirmCount = 1,
             isTest = true,
         )
         AlarmStore.upsert(this, alarm)
@@ -122,8 +125,13 @@ class MainActivity : AppCompatActivity() {
             view.findViewById<TextView>(R.id.alarmTime).text =
                 "%02d:%02d".format(alarm.hour, alarm.minute)
             val suffix = if (alarm.enabled) "" else " · 已关闭"
+            val confirm = if (alarm.confirmEnabled && alarm.confirmCount > 0) {
+                " · ${alarm.confirmText()}"
+            } else {
+                ""
+            }
             view.findViewById<TextView>(R.id.alarmInfo).text =
-                "${alarm.repeatText()} · ${alarm.tasksText()}$suffix"
+                "${alarm.repeatText()} · ${alarm.tasksText()}$confirm$suffix"
 
             val switch = view.findViewById<SwitchMaterial>(R.id.alarmSwitch)
             switch.setOnCheckedChangeListener(null)
@@ -133,6 +141,7 @@ class MainActivity : AppCompatActivity() {
                 if (target != null) {
                     target.enabled = checked
                     AlarmStore.upsert(this@MainActivity, target)
+                    if (!checked) AlarmScheduler.cancelConfirm(this@MainActivity, target.id)
                     AlarmScheduler.apply(this@MainActivity, target)
                     DiagLog.record(
                         this@MainActivity,

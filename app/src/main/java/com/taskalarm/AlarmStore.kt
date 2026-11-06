@@ -9,6 +9,11 @@ object AlarmStore {
     private const val KEY_RINGING_ID = "ringing_id"
     private const val KEY_RINGING_WINDOW = "ringing_window"
     private const val KEY_RINGING_START = "ringing_start"
+    private const val KEY_CONFIRM_ID = "confirm_id"
+    private const val KEY_CONFIRM_WINDOW = "confirm_window"
+    private const val KEY_CONFIRM_DEADLINE = "confirm_deadline"
+    private const val KEY_CONFIRM_LEFT = "confirm_left"
+    private const val KEY_CONFIRM_ROUND = "confirm_round"
 
     private fun prefs(context: Context) =
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
@@ -95,5 +100,36 @@ object AlarmStore {
             .remove(KEY_RINGING_WINDOW)
             .remove(KEY_RINGING_START)
             .apply()
+    }
+
+    // 复查状态要跨进程存活，用 commit 保证排定前已落盘
+    fun setConfirm(context: Context, id: Int, window: Long, deadline: Long, left: Int, round: Int) {
+        prefs(context).edit()
+            .putInt(KEY_CONFIRM_ID, id)
+            .putLong(KEY_CONFIRM_WINDOW, window)
+            .putLong(KEY_CONFIRM_DEADLINE, deadline)
+            .putInt(KEY_CONFIRM_LEFT, left)
+            .putInt(KEY_CONFIRM_ROUND, round)
+            .commit()
+    }
+
+    fun confirmId(context: Context): Int = prefs(context).getInt(KEY_CONFIRM_ID, -1)
+
+    fun confirmWindow(context: Context): Long = prefs(context).getLong(KEY_CONFIRM_WINDOW, -1L)
+
+    fun confirmDeadline(context: Context): Long = prefs(context).getLong(KEY_CONFIRM_DEADLINE, -1L)
+
+    fun confirmLeft(context: Context): Int = prefs(context).getInt(KEY_CONFIRM_LEFT, 0)
+
+    fun confirmRound(context: Context): Int = prefs(context).getInt(KEY_CONFIRM_ROUND, 0)
+
+    fun clearConfirm(context: Context) {
+        prefs(context).edit()
+            .remove(KEY_CONFIRM_ID)
+            .remove(KEY_CONFIRM_WINDOW)
+            .remove(KEY_CONFIRM_DEADLINE)
+            .remove(KEY_CONFIRM_LEFT)
+            .remove(KEY_CONFIRM_ROUND)
+            .commit()
     }
 }

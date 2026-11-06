@@ -2,9 +2,11 @@ package com.taskalarm
 
 import android.app.TimePickerDialog
 import android.os.Bundle
+import android.view.View
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.EditText
+import android.widget.LinearLayout
 import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
@@ -18,6 +20,8 @@ class AlarmEditActivity : AppCompatActivity() {
         const val EXTRA_ID = "alarm_id"
         private val MATH_COUNTS = listOf(1, 2, 3, 4, 5)
         private val SHAKE_SECONDS = listOf(10, 15, 20, 30, 45)
+        private val CONFIRM_MINUTES = listOf(1, 3, 5, 10)
+        private val CONFIRM_COUNTS = listOf(1, 2, 3)
     }
 
     private var alarmId = -1
@@ -31,6 +35,10 @@ class AlarmEditActivity : AppCompatActivity() {
     private lateinit var mathCountSpinner: Spinner
     private lateinit var difficultySpinner: Spinner
     private lateinit var shakeSecondsSpinner: Spinner
+    private lateinit var confirmSwitch: SwitchMaterial
+    private lateinit var confirmOptions: LinearLayout
+    private lateinit var confirmMinutesSpinner: Spinner
+    private lateinit var confirmCountSpinner: Spinner
     private lateinit var nextRingText: TextView
     private val dayBoxes = mutableListOf<CheckBox>()
 
@@ -45,6 +53,10 @@ class AlarmEditActivity : AppCompatActivity() {
         mathCountSpinner = findViewById(R.id.mathCountSpinner)
         difficultySpinner = findViewById(R.id.difficultySpinner)
         shakeSecondsSpinner = findViewById(R.id.shakeSecondsSpinner)
+        confirmSwitch = findViewById(R.id.confirmSwitch)
+        confirmOptions = findViewById(R.id.confirmOptions)
+        confirmMinutesSpinner = findViewById(R.id.confirmMinutesSpinner)
+        confirmCountSpinner = findViewById(R.id.confirmCountSpinner)
         nextRingText = findViewById(R.id.nextRingText)
 
         dayBoxes += findViewById<CheckBox>(R.id.day1)
@@ -58,6 +70,8 @@ class AlarmEditActivity : AppCompatActivity() {
         mathCountSpinner.adapter = SimpleSpinnerAdapter(MATH_COUNTS.map { "$it 题" })
         difficultySpinner.adapter = SimpleSpinnerAdapter(listOf("加减", "加减乘"))
         shakeSecondsSpinner.adapter = SimpleSpinnerAdapter(SHAKE_SECONDS.map { "$it 秒" })
+        confirmMinutesSpinner.adapter = SimpleSpinnerAdapter(CONFIRM_MINUTES.map { "$it 分钟" })
+        confirmCountSpinner.adapter = SimpleSpinnerAdapter(CONFIRM_COUNTS.map { "$it 次" })
 
         alarmId = intent.getIntExtra(EXTRA_ID, -1)
         val existing = if (alarmId >= 0) AlarmStore.find(this, alarmId) else null
@@ -70,6 +84,9 @@ class AlarmEditActivity : AppCompatActivity() {
             mathCountSpinner.setSelection(1)
             difficultySpinner.setSelection(0)
             shakeSecondsSpinner.setSelection(1)
+            confirmSwitch.isChecked = true
+            confirmMinutesSpinner.setSelection(CONFIRM_MINUTES.indexOf(5))
+            confirmCountSpinner.setSelection(CONFIRM_COUNTS.indexOf(2))
         } else {
             hour = existing.hour
             minute = existing.minute
@@ -80,6 +97,13 @@ class AlarmEditActivity : AppCompatActivity() {
             difficultySpinner.setSelection(if (existing.mathHard) 1 else 0)
             shakeSecondsSpinner.setSelection(
                 SHAKE_SECONDS.indexOf(existing.shakeSeconds).coerceAtLeast(0)
+            )
+            confirmSwitch.isChecked = existing.confirmEnabled
+            confirmMinutesSpinner.setSelection(
+                CONFIRM_MINUTES.indexOf(existing.confirmMinutes).coerceAtLeast(0)
+            )
+            confirmCountSpinner.setSelection(
+                CONFIRM_COUNTS.indexOf(existing.confirmCount).coerceAtLeast(0)
             )
             for (i in dayBoxes.indices) {
                 dayBoxes[i].isChecked = existing.repeatDays and (1 shl i) != 0
@@ -99,6 +123,10 @@ class AlarmEditActivity : AppCompatActivity() {
         dayBoxes.forEach { it.setOnCheckedChangeListener { _, _ -> updatePreview() } }
         mathSwitch.setOnCheckedChangeListener { _, _ -> updatePreview() }
         shakeSwitch.setOnCheckedChangeListener { _, _ -> updatePreview() }
+        confirmSwitch.setOnCheckedChangeListener { _, checked ->
+            confirmOptions.visibility = if (checked) View.VISIBLE else View.GONE
+        }
+        confirmOptions.visibility = if (confirmSwitch.isChecked) View.VISIBLE else View.GONE
 
         findViewById<Button>(R.id.saveButton).setOnClickListener { save() }
         val deleteButton = findViewById<Button>(R.id.deleteButton)
@@ -151,8 +179,12 @@ class AlarmEditActivity : AppCompatActivity() {
         alarm.mathHard = difficultySpinner.selectedItemPosition == 1
         alarm.shakeEnabled = shakeSwitch.isChecked
         alarm.shakeSeconds = SHAKE_SECONDS[shakeSecondsSpinner.selectedItemPosition]
+        alarm.confirmEnabled = confirmSwitch.isChecked
+        alarm.confirmMinutes = CONFIRM_MINUTES[confirmMinutesSpinner.selectedItemPosition]
+        alarm.confirmCount = CONFIRM_COUNTS[confirmCountSpinner.selectedItemPosition]
         alarm.enabled = true
 
+        AlarmScheduler.cancelConfirm(this, alarmId)
         AlarmStore.upsert(this, alarm)
         AlarmScheduler.apply(this, alarm)
         DiagLog.record(
@@ -171,6 +203,7 @@ class AlarmEditActivity : AppCompatActivity() {
             .setMessage("删除后无法恢复")
             .setPositiveButton("删除") { _, _ ->
                 DiagLog.record(this, "删除闹钟", "%02d:%02d".format(hour, minute))
+                AlarmScheduler.cancelConfirm(this, alarmId)
                 AlarmScheduler.cancel(this, alarmId)
                 AlarmStore.delete(this, alarmId)
                 finish()

@@ -19,6 +19,13 @@
     <string name="difficulty_hard">加减乘</string>
     <string name="shake_seconds">摇动时长</string>
     <string name="seconds_unit">秒</string>
+    <string name="confirm_title">起床复查</string>
+    <string name="confirm_switch">任务完成后再响，防止回笼觉</string>
+    <string name="confirm_interval">复查间隔</string>
+    <string name="confirm_count">再响次数</string>
+    <string name="confirm_round_label">起床复查 第 %1$d 次</string>
+    <string name="confirm_round_hint">第 %1$d 次复查：完成全部任务后继续计时</string>
+    <string name="task_done_confirm">任务完成，%1$d 分钟后进行下一次复查</string>
     <string name="empty_alarms">还没有闹钟，点击下方按钮新建</string>
     <string name="permission_title">权限检查</string>
     <string name="test_alarm">测试</string>
@@ -52,7 +59,7 @@
     <string name="wrong_answer">答案不对，继续</string>
     <string name="math_solved">数学题已完成</string>
     <string name="shake_solved">摇一摇已完成</string>
-    <string name="task_done">任务全部完成，可以关闭闹钟</string>
+    <string name="task_done">任务全部完成，闹钟已关闭</string>
     <string name="sound_playing">铃声持续播放中，无法通过音量键或通知关闭</string>
     <string name="next_ring">下次响铃：%1$s</string>
     <string name="alarm_disabled">已关闭</string>

@@ -14,6 +14,9 @@ data class Alarm(
     var mathHard: Boolean = false,
     var shakeEnabled: Boolean = false,
     var shakeSeconds: Int = 15,
+    var confirmEnabled: Boolean = true,
+    var confirmMinutes: Int = 5,
+    var confirmCount: Int = 2,
     var lastFiredWindow: Long = -1L,
     var isTest: Boolean = false,
 ) {
@@ -31,6 +34,9 @@ data class Alarm(
         return if (parts.isEmpty()) "无任务" else parts.joinToString(" + ")
     }
 
+    fun confirmText(): String =
+        if (!confirmEnabled || confirmCount <= 0) "" else "复查 ${confirmMinutes} 分钟 ×$confirmCount"
+
     fun toJson(): JSONObject = JSONObject().apply {
         put("id", id)
         put("hour", hour)
@@ -43,6 +49,9 @@ data class Alarm(
         put("mathHard", mathHard)
         put("shakeEnabled", shakeEnabled)
         put("shakeSeconds", shakeSeconds)
+        put("confirmEnabled", confirmEnabled)
+        put("confirmMinutes", confirmMinutes)
+        put("confirmCount", confirmCount)
         put("lastFiredWindow", lastFiredWindow)
         put("isTest", isTest)
     }
@@ -60,6 +69,9 @@ data class Alarm(
             mathHard = json.optBoolean("mathHard", false),
             shakeEnabled = json.optBoolean("shakeEnabled", false),
             shakeSeconds = json.optInt("shakeSeconds", 15),
+            confirmEnabled = json.optBoolean("confirmEnabled", true),
+            confirmMinutes = json.optInt("confirmMinutes", 5),
+            confirmCount = json.optInt("confirmCount", 2),
             lastFiredWindow = json.optLong("lastFiredWindow", -1L),
             isTest = json.optBoolean("isTest", false),
         )

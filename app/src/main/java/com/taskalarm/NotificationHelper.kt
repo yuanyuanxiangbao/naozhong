@@ -36,6 +36,7 @@ object NotificationHelper {
     const val CHANNEL_RINGING = "ringing"
     const val CHANNEL_INFO = "info"
     const val NOTIFICATION_ID = 1001
+    const val CONFIRM_NOTIFICATION_ID = 1003
 
     fun ensureChannels(context: Context) {
         val manager = context.getSystemService(NotificationManager::class.java)
@@ -60,11 +61,12 @@ object NotificationHelper {
         manager.createNotificationChannels(listOf(ringing, info))
     }
 
-    private fun ringPendingIntent(context: Context, alarm: Alarm): PendingIntent {
+    private fun ringPendingIntent(context: Context, alarm: Alarm, round: Int): PendingIntent {
         val intent = Intent(context, AlarmRingActivity::class.java).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
             putExtra(AlarmRingActivity.EXTRA_ID, alarm.id)
             putExtra(AlarmRingActivity.EXTRA_WINDOW, AlarmStore.ringingWindow(context))
+            putExtra(AlarmService.EXTRA_ROUND, round)
         }
         return PendingIntent.getActivity(
             context, alarm.id + 200000, intent,
@@ -73,15 +75,20 @@ object NotificationHelper {
         )
     }
 
-    fun ringingNotification(context: Context, alarm: Alarm): Notification {
+    fun ringingNotification(context: Context, alarm: Alarm, round: Int = 0): Notification {
         ensureChannels(context)
-        val fullScreen = ringPendingIntent(context, alarm)
-        val title = alarm.label.ifBlank { "闹钟" }
+        val fullScreen = ringPendingIntent(context, alarm, round)
+        val title = if (round > 0) "起床复查 第 $round 次" else alarm.label.ifBlank { "闹钟" }
+        val text = if (round > 0) {
+            "第 $round 次复查，完成任务后继续计时"
+        } else {
+            "点击打开答题页，完成任务后进入起床复查"
+        }
         return Notification.Builder(context, CHANNEL_RINGING)
             .setSmallIcon(R.drawable.ic_alarm)
             .setColor(Color.parseColor("#5B4CDB"))
             .setContentTitle(title)
-            .setContentText("点击打开答题页，完成任务后自动关闭")
+            .setContentText(text)
             .setCategory(Notification.CATEGORY_ALARM)
             .setFullScreenIntent(fullScreen, true)
             .setContentIntent(fullScreen)
@@ -99,9 +106,37 @@ object NotificationHelper {
             .build()
     }
 
-    fun showRingingNotification(context: Context, alarm: Alarm) {
+    fun showRingingNotification(context: Context, alarm: Alarm, round: Int = 0) {
         context.getSystemService(NotificationManager::class.java)
-            .notify(NOTIFICATION_ID, ringingNotification(context, alarm))
+            .notify(NOTIFICATION_ID, ringingNotification(context, alarm, round))
+    }
+
+    fun showConfirm(context: Context, alarm: Alarm, round: Int, deadline: Long) {
+        ensureChannels(context)
+        val remain = ((deadline - System.currentTimeMillis()) / 60_000L).coerceAtLeast(1L)
+        val pending = PendingIntent.getActivity(
+            context, 700000,
+            Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+        val notification = Notification.Builder(context, CHANNEL_INFO)
+            .setSmallIcon(R.drawable.ic_alarm)
+            .setColor(Color.parseColor("#5B4CDB"))
+            .setContentTitle("起床复查中")
+            .setContentText("${alarm.label.ifBlank { "闹钟" }}：约 $remain 分钟后第 $round 次响铃，需要再次完成任务")
+            .setCategory(Notification.CATEGORY_ALARM)
+            .setContentIntent(pending)
+            .setOngoing(true)
+            .setAutoCancel(false)
+            .setVisibility(Notification.VISIBILITY_PUBLIC)
+            .build()
+        context.getSystemService(NotificationManager::class.java)
+            .notify(CONFIRM_NOTIFICATION_ID, notification)
+    }
+
+    fun cancelConfirm(context: Context) {
+        context.getSystemService(NotificationManager::class.java)
+            .cancel(CONFIRM_NOTIFICATION_ID)
     }
 
     fun showMissed(context: Context, alarm: Alarm) {

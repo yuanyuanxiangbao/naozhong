@@ -26,6 +26,7 @@ class AlarmRingActivity : AppCompatActivity() {
 
     private var alarmId = -1
     private var currentAlarm: Alarm? = null
+    private var currentRound = 0
     private val taskTypes = mutableListOf<Int>()
     private var taskIndex = 0
     private var closing = false
@@ -62,18 +63,29 @@ class AlarmRingActivity : AppCompatActivity() {
     }
 
     private fun loadAlarm(intent: Intent) {
-        alarmId = intent.getIntExtra(EXTRA_ID, -1)
-        if (alarmId < 0) alarmId = AlarmStore.ringingId(this)
+        val newId = intent.getIntExtra(EXTRA_ID, -1).let {
+            if (it < 0) AlarmStore.ringingId(this) else it
+        }
+        val newRound = intent.getIntExtra(AlarmService.EXTRA_ROUND, 0)
+        // 全屏通知和显式启动可能同时拉起同一个 singleTask 页面，保留已答对的进度
+        if (newId == alarmId && !closing) {
+            if (taskContainer.childCount > 0) {
+                currentRound = newRound
+                updateRoundText()
+            }
+            return
+        }
+        alarmId = newId
+        currentRound = newRound
         val alarm = if (alarmId >= 0) AlarmStore.find(this, alarmId) else null
         if (alarm == null) {
             finishAndRemoveTask()
             return
         }
         currentAlarm = alarm
-        DiagLog.record(this, "打开答题页", "%02d:%02d %s".format(alarm.hour, alarm.minute, alarm.label.ifBlank { "无标签" }))
+        DiagLog.record(this, "打开答题页", "%02d:%02d 第 %d 次".format(alarm.hour, alarm.minute, currentRound))
 
         ringTime.text = "%02d:%02d".format(alarm.hour, alarm.minute)
-        ringLabel.text = alarm.label.ifBlank { "闹钟" }
 
         taskTypes.clear()
         if (alarm.mathEnabled) taskTypes += TYPE_MATH
@@ -87,13 +99,27 @@ class AlarmRingActivity : AppCompatActivity() {
 
         taskIndex = 0
         closing = false
-        taskStatus.text = getString(R.string.solve_to_dismiss)
+        updateRoundText()
         taskContainer.removeAllViews()
 
         if (taskTypes.isEmpty()) {
             finishTasks()
         } else {
             showNextTask(alarm)
+        }
+    }
+
+    private fun updateRoundText() {
+        val alarm = currentAlarm ?: return
+        ringLabel.text = if (currentRound > 0) {
+            getString(R.string.confirm_round_label, currentRound)
+        } else {
+            alarm.label.ifBlank { "闹钟" }
+        }
+        taskStatus.text = if (currentRound > 0) {
+            getString(R.string.confirm_round_hint, currentRound)
+        } else {
+            getString(R.string.solve_to_dismiss)
         }
     }
 
@@ -127,15 +153,21 @@ class AlarmRingActivity : AppCompatActivity() {
         if (closing) return
         closing = true
         taskContainer.removeAllViews()
-        taskStatus.text = getString(R.string.task_done)
-        DiagLog.record(this, "任务完成", "自动关闭闹钟 id=$alarmId")
+        val alarm = currentAlarm
+        val willConfirm = alarm != null && ConfirmPlan.next(alarm, currentRound, AlarmStore.confirmLeft(this)) != null
+        taskStatus.text = if (willConfirm) {
+            getString(R.string.task_done_confirm, alarm!!.confirmMinutes)
+        } else {
+            getString(R.string.task_done)
+        }
+        DiagLog.record(this, "任务完成", "第 $currentRound 次，id=$alarmId")
         startService(
-            Intent(this, AlarmService::class.java).setAction(AlarmService.ACTION_STOP)
+            Intent(this, AlarmService::class.java)
+                .setAction(AlarmService.ACTION_TASK_DONE)
+                .putExtra(AlarmService.EXTRA_ID, alarmId)
+                .putExtra(AlarmService.EXTRA_ROUND, currentRound)
         )
         AlarmStore.clearRinging(this)
-        if (currentAlarm?.isTest == true) {
-            AlarmStore.delete(this, alarmId)
-        }
         window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         taskStatus.postDelayed({ finishAndRemoveTask() }, 800)
     }
