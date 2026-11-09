@@ -1,6 +1,9 @@
 package com.taskalarm
 
 import org.json.JSONObject
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
 
 data class Alarm(
     var id: Int = 0,
@@ -36,6 +39,15 @@ data class Alarm(
 
     fun confirmText(): String =
         if (!confirmEnabled || confirmCount <= 0) "" else "复查 ${confirmMinutes} 分钟 ×$confirmCount"
+
+    // 当天已经响过的闹钟锁到次日零点，防止睡迷糊时把闹钟彻底关掉
+    fun isLockedToday(): Boolean {
+        if (lastFiredWindow <= 0) return false
+        val firedDay = Instant.ofEpochMilli(lastFiredWindow)
+            .atZone(ZoneId.systemDefault())
+            .toLocalDate()
+        return firedDay == LocalDate.now()
+    }
 
     fun toJson(): JSONObject = JSONObject().apply {
         put("id", id)

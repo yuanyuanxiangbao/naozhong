@@ -21,8 +21,12 @@
     <string name="seconds_unit">秒</string>
     <string name="confirm_title">起床复查</string>
     <string name="confirm_switch">任务完成后再响，防止回笼觉</string>
+    <string name="confirm_locked_suffix">（今天已响过，暂不可改）</string>
     <string name="confirm_interval">复查间隔</string>
     <string name="confirm_count">再响次数</string>
+    <string name="confirm_count_hint">次数</string>
+    <string name="confirm_count_invalid">次数请填 1 到 20 之间</string>
+    <string name="alarm_locked_today">今天这个闹钟已经响过，过了零点才能关闭</string>
     <string name="confirm_round_label">起床复查 第 %1$d 次</string>
     <string name="confirm_round_hint">第 %1$d 次复查：完成全部任务后继续计时</string>
     <string name="task_done_confirm">任务完成，%1$d 分钟后进行下一次复查</string>

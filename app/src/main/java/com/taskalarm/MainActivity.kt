@@ -130,15 +130,31 @@ class MainActivity : AppCompatActivity() {
             } else {
                 ""
             }
+            val locked = alarm.isLockedToday()
+            val lockHint = if (locked) " · 今天已响过，不可关闭" else ""
             view.findViewById<TextView>(R.id.alarmInfo).text =
-                "${alarm.repeatText()} · ${alarm.tasksText()}$confirm$suffix"
+                "${alarm.repeatText()} · ${alarm.tasksText()}$confirm$suffix$lockHint"
 
             val switch = view.findViewById<SwitchMaterial>(R.id.alarmSwitch)
             switch.setOnCheckedChangeListener(null)
             switch.isChecked = alarm.enabled
-            switch.setOnCheckedChangeListener { _, checked ->
+            switch.setOnCheckedChangeListener { sw, checked ->
                 val target = AlarmStore.find(this@MainActivity, alarm.id)
                 if (target != null) {
+                    if (!checked && target.isLockedToday()) {
+                        DiagLog.record(
+                            this@MainActivity, "拒绝关闭闹钟",
+                            "%02d:%02d 当天已响过".format(target.hour, target.minute)
+                        )
+                        Toast.makeText(
+                            this@MainActivity, R.string.alarm_locked_today, Toast.LENGTH_LONG
+                        ).show()
+                        sw.setOnCheckedChangeListener(null)
+                        sw.isChecked = true
+                        // 重建列表重新绑定监听，避免复用时开关失效
+                        refresh()
+                        return@setOnCheckedChangeListener
+                    }
                     target.enabled = checked
                     AlarmStore.upsert(this@MainActivity, target)
                     if (!checked) AlarmScheduler.cancelConfirm(this@MainActivity, target.id)

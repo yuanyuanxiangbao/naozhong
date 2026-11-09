@@ -8,7 +8,8 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:paddingBottom="72dp">
 
         <TextView
             android:layout_width="match_parent"
@@ -220,10 +221,17 @@
                         android:text="@string/confirm_count"
                         android:textColor="@color/text_primary" />
 
-                    <Spinner
-                        android:id="@+id/confirmCountSpinner"
+                    <EditText
+                        android:id="@+id/confirmCountInput"
                         android:layout_width="120dp"
-                        android:layout_height="wrap_content" />
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:hint="@string/confirm_count_hint"
+                        android:importantForAutofill="no"
+                        android:inputType="number"
+                        android:maxLength="2"
+                        android:textColor="@color/text_primary"
+                        android:textColorHint="@color/text_secondary" />
                 </LinearLayout>
             </LinearLayout>
         </LinearLayout>

@@ -21,7 +21,7 @@ class AlarmEditActivity : AppCompatActivity() {
         private val MATH_COUNTS = listOf(1, 2, 3, 4, 5)
         private val SHAKE_SECONDS = listOf(10, 15, 20, 30, 45)
         private val CONFIRM_MINUTES = listOf(1, 3, 5, 10)
-        private val CONFIRM_COUNTS = listOf(1, 2, 3)
+        private const val CONFIRM_COUNT_MAX = 20
     }
 
     private var alarmId = -1
@@ -38,7 +38,7 @@ class AlarmEditActivity : AppCompatActivity() {
     private lateinit var confirmSwitch: SwitchMaterial
     private lateinit var confirmOptions: LinearLayout
     private lateinit var confirmMinutesSpinner: Spinner
-    private lateinit var confirmCountSpinner: Spinner
+    private lateinit var confirmCountInput: EditText
     private lateinit var nextRingText: TextView
     private val dayBoxes = mutableListOf<CheckBox>()
 
@@ -56,7 +56,7 @@ class AlarmEditActivity : AppCompatActivity() {
         confirmSwitch = findViewById(R.id.confirmSwitch)
         confirmOptions = findViewById(R.id.confirmOptions)
         confirmMinutesSpinner = findViewById(R.id.confirmMinutesSpinner)
-        confirmCountSpinner = findViewById(R.id.confirmCountSpinner)
+        confirmCountInput = findViewById(R.id.confirmCountInput)
         nextRingText = findViewById(R.id.nextRingText)
 
         dayBoxes += findViewById<CheckBox>(R.id.day1)
@@ -71,7 +71,6 @@ class AlarmEditActivity : AppCompatActivity() {
         difficultySpinner.adapter = SimpleSpinnerAdapter(listOf("加减", "加减乘"))
         shakeSecondsSpinner.adapter = SimpleSpinnerAdapter(SHAKE_SECONDS.map { "$it 秒" })
         confirmMinutesSpinner.adapter = SimpleSpinnerAdapter(CONFIRM_MINUTES.map { "$it 分钟" })
-        confirmCountSpinner.adapter = SimpleSpinnerAdapter(CONFIRM_COUNTS.map { "$it 次" })
 
         alarmId = intent.getIntExtra(EXTRA_ID, -1)
         val existing = if (alarmId >= 0) AlarmStore.find(this, alarmId) else null
@@ -86,7 +85,7 @@ class AlarmEditActivity : AppCompatActivity() {
             shakeSecondsSpinner.setSelection(1)
             confirmSwitch.isChecked = true
             confirmMinutesSpinner.setSelection(CONFIRM_MINUTES.indexOf(5))
-            confirmCountSpinner.setSelection(CONFIRM_COUNTS.indexOf(2))
+            confirmCountInput.setText("2")
         } else {
             hour = existing.hour
             minute = existing.minute
@@ -102,11 +101,15 @@ class AlarmEditActivity : AppCompatActivity() {
             confirmMinutesSpinner.setSelection(
                 CONFIRM_MINUTES.indexOf(existing.confirmMinutes).coerceAtLeast(0)
             )
-            confirmCountSpinner.setSelection(
-                CONFIRM_COUNTS.indexOf(existing.confirmCount).coerceAtLeast(0)
-            )
+            confirmCountInput.setText(existing.confirmCount.toString())
             for (i in dayBoxes.indices) {
                 dayBoxes[i].isChecked = existing.repeatDays and (1 shl i) != 0
+            }
+            // 今天已经响过的闹钟不允许趁复查间隙关掉复查开关
+            if (existing.isLockedToday()) {
+                confirmSwitch.isEnabled = false
+                confirmSwitch.text =
+                    getString(R.string.confirm_switch) + getString(R.string.confirm_locked_suffix)
             }
         }
 
@@ -166,6 +169,11 @@ class AlarmEditActivity : AppCompatActivity() {
             Toast.makeText(this, R.string.need_task_toast, Toast.LENGTH_LONG).show()
             return
         }
+        val count = confirmCountInput.text.toString().toIntOrNull()
+        if (confirmSwitch.isChecked && (count == null || count < 1 || count > CONFIRM_COUNT_MAX)) {
+            Toast.makeText(this, R.string.confirm_count_invalid, Toast.LENGTH_LONG).show()
+            return
+        }
         val existing = if (alarmId >= 0) AlarmStore.find(this, alarmId) else null
         val alarm = existing?.copy() ?: Alarm()
         if (alarmId < 0) alarmId = AlarmStore.nextId(this)
@@ -181,10 +189,11 @@ class AlarmEditActivity : AppCompatActivity() {
         alarm.shakeSeconds = SHAKE_SECONDS[shakeSecondsSpinner.selectedItemPosition]
         alarm.confirmEnabled = confirmSwitch.isChecked
         alarm.confirmMinutes = CONFIRM_MINUTES[confirmMinutesSpinner.selectedItemPosition]
-        alarm.confirmCount = CONFIRM_COUNTS[confirmCountSpinner.selectedItemPosition]
+        alarm.confirmCount = count ?: 0
         alarm.enabled = true
 
-        AlarmScheduler.cancelConfirm(this, alarmId)
+        // 编辑不应打断今天正在进行的复查链，只在关闭复查时才清理
+        if (!alarm.confirmEnabled) AlarmScheduler.cancelConfirm(this, alarmId)
         AlarmStore.upsert(this, alarm)
         AlarmScheduler.apply(this, alarm)
         DiagLog.record(
@@ -198,6 +207,11 @@ class AlarmEditActivity : AppCompatActivity() {
     }
 
     private fun confirmDelete() {
+        if (AlarmStore.find(this, alarmId)?.isLockedToday() == true) {
+            DiagLog.record(this, "拒绝删除闹钟", "%02d:%02d 当天已响过".format(hour, minute))
+            Toast.makeText(this, R.string.alarm_locked_today, Toast.LENGTH_LONG).show()
+            return
+        }
         AlertDialog.Builder(this)
             .setTitle("删除闹钟")
             .setMessage("删除后无法恢复")
