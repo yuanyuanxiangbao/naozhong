@@ -1,10 +1,14 @@
 package com.taskalarm
 
 import android.content.Intent
+import android.animation.ObjectAnimator
+import android.animation.ValueAnimator
 import android.hardware.Sensor
 import android.hardware.SensorManager
 import android.os.Bundle
+import android.view.View
 import android.view.WindowManager
+import android.view.animation.DecelerateInterpolator
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
@@ -34,6 +38,7 @@ class AlarmRingActivity : AppCompatActivity() {
     private val taskTypes = mutableListOf<Int>()
     private var taskIndex = 0
     private var closing = false
+    private var breathe: ObjectAnimator? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -59,6 +64,42 @@ class AlarmRingActivity : AppCompatActivity() {
             }
         })
         loadAlarm(intent)
+        playEnterAnimation()
+    }
+
+    // 时间先浮出再缓慢呼吸，任务卡片稍后上浮，模拟老式电子钟的节奏
+    private fun playEnterAnimation() {
+        ringTime.alpha = 0f
+        ringTime.scaleX = 0.94f
+        ringTime.scaleY = 0.94f
+        ringTime.animate()
+            .alpha(1f).scaleX(1f).scaleY(1f)
+            .setDuration(520)
+            .setInterpolator(DecelerateInterpolator())
+            .start()
+
+        val card = findViewById<View>(R.id.taskCard)
+        card.alpha = 0f
+        card.translationY = 28 * resources.displayMetrics.density
+        card.animate()
+            .alpha(1f).translationY(0f)
+            .setStartDelay(140)
+            .setDuration(440)
+            .setInterpolator(DecelerateInterpolator())
+            .start()
+
+        breathe = ObjectAnimator.ofFloat(ringTime, View.ALPHA, 1f, 0.8f).apply {
+            duration = 2600
+            startDelay = 760
+            repeatCount = ValueAnimator.INFINITE
+            repeatMode = ValueAnimator.REVERSE
+            start()
+        }
+    }
+
+    override fun onDestroy() {
+        breathe?.cancel()
+        super.onDestroy()
     }
 
     override fun onResume() {

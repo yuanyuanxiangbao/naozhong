@@ -19,11 +19,11 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:letterSpacing="-0.01"
+            android:fontFamily="sans-serif-medium"
+            android:letterSpacing="-0.03"
             android:text="@string/alarms_title"
             android:textColor="@color/text_primary"
-            android:textSize="32sp"
-            android:textStyle="bold" />
+            android:textSize="36sp" />
 
         <TextView
             android:id="@+id/logButton"
@@ -96,12 +96,12 @@
         android:id="@+id/alarmList"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="8dp"
         android:layout_weight="1"
         android:clipToPadding="false"
-        android:divider="@android:color/transparent"
-        android:dividerHeight="10dp"
-        android:paddingBottom="4dp"
+        android:divider="@color/divider"
+        android:dividerHeight="1dp"
+        android:paddingBottom="12dp"
         android:scrollbars="none" />
 
     <LinearLayout

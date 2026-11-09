@@ -8,6 +8,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.animation.AnimationUtils
 import android.widget.BaseAdapter
 import android.widget.Button
 import android.widget.ListView
@@ -24,6 +25,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var permissionBanner: TextView
     private lateinit var adapter: AlarmAdapter
     private var alarms: MutableList<Alarm> = mutableListOf()
+    private var listAnimated = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -41,12 +43,15 @@ class MainActivity : AppCompatActivity() {
         findViewById<TextView>(R.id.testButton).setOnClickListener { createTestAlarm() }
         findViewById<TextView>(R.id.logButton).setOnClickListener {
             startActivity(Intent(this, LogActivity::class.java))
+            overridePendingTransition(R.anim.slide_in, R.anim.fade_out)
         }
         findViewById<TextView>(R.id.permissionButton).setOnClickListener {
             startActivity(Intent(this, PermissionActivity::class.java))
+            overridePendingTransition(R.anim.slide_in, R.anim.fade_out)
         }
         permissionBanner.setOnClickListener {
             startActivity(Intent(this, PermissionActivity::class.java))
+            overridePendingTransition(R.anim.slide_in, R.anim.fade_out)
         }
 
         requestNotificationPermission()
@@ -62,6 +67,12 @@ class MainActivity : AppCompatActivity() {
     private fun refresh() {
         alarms = AlarmStore.load(this)
         adapter.notifyDataSetChanged()
+        if (!listAnimated && alarms.isNotEmpty()) {
+            // 只在首次进入时播放错峰入场，开关切换后重排不再重播
+            listView.layoutAnimation = AnimationUtils.loadLayoutAnimation(this, R.anim.list_layout)
+            listView.scheduleLayoutAnimation()
+            listAnimated = true
+        }
         val isEmpty = alarms.isEmpty()
         listView.visibility = if (isEmpty) View.GONE else View.VISIBLE
         emptyText.visibility = if (isEmpty) View.VISIBLE else View.GONE
@@ -74,6 +85,7 @@ class MainActivity : AppCompatActivity() {
             Intent(this, AlarmEditActivity::class.java)
                 .putExtra(AlarmEditActivity.EXTRA_ID, id)
         )
+        overridePendingTransition(R.anim.slide_in, R.anim.fade_out)
     }
 
     private fun createTestAlarm() {

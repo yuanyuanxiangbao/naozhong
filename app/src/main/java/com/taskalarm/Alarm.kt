@@ -42,6 +42,8 @@ data class Alarm(
 
     // 当天已经响过的闹钟锁到次日零点，防止睡迷糊时把闹钟彻底关掉
     fun isLockedToday(): Boolean {
+        // 测试闹钟是临时数据，不参与锁定，否则残留后当天无法清理
+        if (isTest) return false
         if (lastFiredWindow <= 0) return false
         val firedDay = Instant.ofEpochMilli(lastFiredWindow)
             .atZone(ZoneId.systemDefault())

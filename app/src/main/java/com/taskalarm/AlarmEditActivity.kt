@@ -227,6 +227,11 @@ class AlarmEditActivity : AppCompatActivity() {
             .show()
     }
 
+    override fun finish() {
+        super.finish()
+        overridePendingTransition(R.anim.fade_in, R.anim.slide_out)
+    }
+
     private inner class SimpleSpinnerAdapter(items: List<String>) :
         android.widget.ArrayAdapter<String>(
             this@AlarmEditActivity,

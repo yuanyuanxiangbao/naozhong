@@ -52,6 +52,11 @@ class LogActivity : AppCompatActivity() {
         emptyView.visibility = if (empty) View.VISIBLE else View.GONE
     }
 
+    override fun finish() {
+        super.finish()
+        overridePendingTransition(R.anim.fade_in, R.anim.slide_out)
+    }
+
     private inner class LogAdapter : BaseAdapter() {
         override fun getCount(): Int = entries.size
 

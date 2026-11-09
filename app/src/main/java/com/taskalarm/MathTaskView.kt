@@ -69,6 +69,10 @@ class MathTaskView(
         input.doAfterTextChanged { text ->
             if (answer.isNotEmpty() && text?.toString() == answer) {
                 solved++
+                // 答对时输入框轻微弹一下，给即时确幸
+                input.animate().scaleX(1.05f).scaleY(1.05f).setDuration(80).withEndAction {
+                    input.animate().scaleX(1f).scaleY(1f).setDuration(140).start()
+                }.start()
                 input.setText("")
                 if (solved >= total) {
                     progressView.text = "已完成 $total / $total"
@@ -109,6 +113,8 @@ class MathTaskView(
         }
         progressView.text = "已完成 $solved / $total"
         questionView.text = "$a $op $b = ?"
+        questionView.alpha = 0f
+        questionView.animate().alpha(1f).setDuration(180).start()
     }
 
     private fun color(id: Int): Int = ContextCompat.getColor(context, id)

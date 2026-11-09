@@ -107,7 +107,7 @@ class ShakeTaskView(
 
     private fun updateProgress() {
         val percent = ((activeMs * 100) / requiredMs).toInt().coerceIn(0, 100)
-        progressBar.progress = percent
+        progressBar.setProgress(percent, true)
         progressText.text = "已完成 $percent%"
     }
 }

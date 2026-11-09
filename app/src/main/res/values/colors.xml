@@ -1,25 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="bg">#FFF5F4FA</color>
-    <color name="surface">#FFFFFFFF</color>
-    <color name="surface_variant">#FFEFEDF8</color>
-    <color name="primary">#FF5B4CDB</color>
-    <color name="primary_dark">#FF4335B8</color>
-    <color name="primary_soft">#FFEDEAFC</color>
-    <color name="text_primary">#FF17161C</color>
-    <color name="text_secondary">#FF6B6779</color>
-    <color name="text_tertiary">#FF9C98A8</color>
-    <color name="divider">#FFE8E5F1</color>
-    <color name="danger">#FFC9453D</color>
-    <color name="danger_soft">#FFFCECEB</color>
-    <color name="success">#FF2C8F57</color>
-    <color name="success_soft">#FFE9F5EE</color>
+    <color name="bg">#FFF6F2E9</color>
+    <color name="surface">#FFFFFCF6</color>
+    <color name="surface_variant">#FFEFE7D9</color>
+    <color name="primary">#FFC2452D</color>
+    <color name="primary_dark">#FF9E3420</color>
+    <color name="primary_soft">#FFFAE9E2</color>
+    <color name="text_primary">#FF1C1811</color>
+    <color name="text_secondary">#FF6B6155</color>
+    <color name="text_tertiary">#FF9C9081</color>
+    <color name="divider">#FFE2D8C7</color>
+    <color name="danger">#FFC2452D</color>
+    <color name="danger_soft">#FFFAE9E2</color>
+    <color name="success">#FF3F7A4F</color>
+    <color name="success_soft">#FFEAF2EA</color>
     <color name="white">#FFFFFFFF</color>
 
-    <color name="ring_bg">#FF0D0B18</color>
-    <color name="ring_bg_top">#FF1B1433</color>
-    <color name="ring_text">#FFF6F4FF</color>
-    <color name="ring_text_dim">#FFB4ACD6</color>
-    <color name="ring_card">#FF1C1830</color>
-    <color name="ring_accent">#FF8E7DF7</color>
+    <color name="ring_bg">#FF12100C</color>
+    <color name="ring_bg_top">#FF2B2118</color>
+    <color name="ring_text">#FFF8F1E4</color>
+    <color name="ring_text_dim">#FFB5A78F</color>
+    <color name="ring_card">#FF1E1810</color>
+    <color name="ring_accent">#FFE8A33D</color>
 </resources>

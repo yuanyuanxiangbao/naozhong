@@ -90,6 +90,11 @@ class PermissionActivity : AppCompatActivity() {
         )
     }
 
+    override fun finish() {
+        super.finish()
+        overridePendingTransition(R.anim.fade_in, R.anim.slide_out)
+    }
+
     private fun addRow(title: String, description: String, granted: Boolean, action: () -> Unit) {
         val row = buildCard()
         val dot = if (granted) R.drawable.dot_success else R.drawable.dot_danger
@@ -101,7 +106,7 @@ class PermissionActivity : AppCompatActivity() {
 
     private fun addGuideRow(title: String, description: String, action: () -> Unit) {
         val row = buildCard()
-        row.addView(buildHeader(title, null, true, R.drawable.dot_primary))
+        row.addView(buildHeader(title, null, true, R.drawable.dot_neutral))
         row.addView(buildDescription(description))
         row.addView(buildAction(action))
         container.addView(row)
