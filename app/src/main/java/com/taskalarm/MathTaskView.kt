@@ -1,13 +1,13 @@
 package com.taskalarm
 
 import android.content.Context
-import android.graphics.Color
 import android.text.InputFilter
 import android.text.InputType
 import android.view.Gravity
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.core.content.ContextCompat
 import androidx.core.widget.doAfterTextChanged
 import kotlin.random.Random
 
@@ -31,32 +31,33 @@ class MathTaskView(
 
         val title = TextView(context).apply {
             text = "计算并输入答案"
-            setTextColor(Color.parseColor("#F5F3FF"))
-            textSize = 20f
+            setTextColor(color(R.color.ring_text))
+            textSize = 18f
             gravity = Gravity.CENTER
+            letterSpacing = 0.04f
         }
 
         progressView.apply {
-            setTextColor(Color.parseColor("#C9C4F2"))
-            textSize = 15f
+            setTextColor(color(R.color.ring_text_dim))
+            textSize = 13f
             gravity = Gravity.CENTER
-            setPadding(0, 12, 0, 12)
+            setPadding(0, 10, 0, 10)
         }
 
         questionView.apply {
-            setTextColor(Color.parseColor("#F5F3FF"))
-            textSize = 36f
+            setTextColor(color(R.color.ring_text))
+            textSize = 42f
             gravity = Gravity.CENTER
-            setPadding(0, 8, 0, 20)
+            setPadding(0, 6, 0, 22)
         }
 
         input.apply {
             inputType = InputType.TYPE_CLASS_NUMBER
             filters = arrayOf(InputFilter.LengthFilter(6))
-            setTextColor(Color.parseColor("#1B1B1F"))
-            textSize = 28f
+            setTextColor(color(R.color.text_primary))
+            textSize = 26f
             gravity = Gravity.CENTER
-            setBackgroundResource(R.drawable.bg_card)
+            setBackgroundResource(R.drawable.bg_ring_input)
             setPadding(28, 18, 28, 18)
         }
 
@@ -109,4 +110,6 @@ class MathTaskView(
         progressView.text = "已完成 $solved / $total"
         questionView.text = "$a $op $b = ?"
     }
+
+    private fun color(id: Int): Int = ContextCompat.getColor(context, id)
 }

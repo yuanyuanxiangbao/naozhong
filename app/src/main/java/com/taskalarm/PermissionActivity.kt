@@ -2,12 +2,10 @@ package com.taskalarm
 
 import android.Manifest
 import android.content.pm.PackageManager
-import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
 import android.view.Gravity
 import android.view.View
-import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
@@ -21,6 +19,7 @@ class PermissionActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_permission)
+        findViewById<View>(android.R.id.content).applySystemBarsPadding()
         container = findViewById(R.id.permissionContainer)
         status = findViewById(R.id.permissionStatus)
     }
@@ -71,10 +70,10 @@ class PermissionActivity : AppCompatActivity() {
             !PermissionHelper.needsBattery(this),
         ) { PermissionHelper.openBattery(this) }
 
-        addRow(
+        // 厂商限制无法自动检测，只作为引导入口，不显示开启状态
+        addGuideRow(
             getString(R.string.vendor_guide),
             getString(R.string.vendor_guide_desc),
-            true,
         ) { PermissionHelper.openVendorSettings(this) }
 
         val missing = PermissionHelper.missingCount(this)
@@ -92,51 +91,94 @@ class PermissionActivity : AppCompatActivity() {
     }
 
     private fun addRow(title: String, description: String, granted: Boolean, action: () -> Unit) {
-        val row = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setBackgroundResource(R.drawable.bg_card)
-            setPadding(16, 16, 16, 16)
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply { bottomMargin = 12 }
-        }
+        val row = buildCard()
+        val dot = if (granted) R.drawable.dot_success else R.drawable.dot_danger
+        row.addView(buildHeader(title, if (granted) "已开启" else "未开启", granted, dot))
+        row.addView(buildDescription(description))
+        if (!granted) row.addView(buildAction(action))
+        container.addView(row)
+    }
 
-        row.addView(TextView(this).apply {
-            text = title
-            setTextColor(ContextCompat.getColor(this@PermissionActivity, R.color.text_primary))
-            textSize = 17f
-        })
+    private fun addGuideRow(title: String, description: String, action: () -> Unit) {
+        val row = buildCard()
+        row.addView(buildHeader(title, null, true, R.drawable.dot_primary))
+        row.addView(buildDescription(description))
+        row.addView(buildAction(action))
+        container.addView(row)
+    }
 
-        row.addView(TextView(this).apply {
-            text = description
-            setTextColor(ContextCompat.getColor(this@PermissionActivity, R.color.text_secondary))
-            textSize = 13f
-            setPadding(0, 6, 0, 10)
-        })
+    private fun buildCard() = LinearLayout(this).apply {
+        orientation = LinearLayout.VERTICAL
+        setBackgroundResource(R.drawable.bg_card)
+        setPadding(18.dp(), 16.dp(), 18.dp(), 16.dp())
+        layoutParams = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT
+        ).apply { bottomMargin = 10.dp() }
+    }
 
-        val footer = LinearLayout(this).apply {
+    private fun buildHeader(
+        title: String,
+        state: String?,
+        granted: Boolean,
+        dotRes: Int,
+    ): LinearLayout {
+        val header = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
         }
-
-        footer.addView(TextView(this).apply {
-            text = if (granted) "已开启" else "未开启"
-            setTextColor(
-                if (granted) Color.parseColor("#2E9E5B") else Color.parseColor("#D64545")
-            )
-            textSize = 14f
+        header.addView(View(this).apply {
+            setBackgroundResource(dotRes)
+            layoutParams = LinearLayout.LayoutParams(8.dp(), 8.dp())
+        })
+        header.addView(TextView(this).apply {
+            text = title
+            setTextColor(ContextCompat.getColor(this@PermissionActivity, R.color.text_primary))
+            textSize = 16f
+            setPadding(10.dp(), 0, 0, 0)
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
         })
-
-        if (!granted) {
-            footer.addView(Button(this).apply {
-                text = getString(R.string.open_settings)
-                setOnClickListener { action() }
+        if (state != null) {
+            header.addView(TextView(this).apply {
+                text = state
+                setTextColor(
+                    ContextCompat.getColor(
+                        this@PermissionActivity,
+                        if (granted) R.color.success else R.color.danger
+                    )
+                )
+                textSize = 12f
+                letterSpacing = 0.04f
             })
         }
-
-        row.addView(footer)
-        container.addView(row)
+        return header
     }
+
+    private fun buildDescription(description: String) = TextView(this).apply {
+        text = description
+        setTextColor(ContextCompat.getColor(this@PermissionActivity, R.color.text_secondary))
+        textSize = 13f
+        setLineSpacing(6f, 1f)
+        setPadding(18.dp(), 8.dp(), 0, 0)
+    }
+
+    private fun buildAction(action: () -> Unit) = TextView(this).apply {
+        text = getString(R.string.open_settings)
+        setTextColor(ContextCompat.getColor(this@PermissionActivity, R.color.primary_dark))
+        textSize = 13f
+        gravity = Gravity.CENTER
+        setBackgroundResource(R.drawable.bg_card_soft)
+        setPadding(20.dp(), 10.dp(), 20.dp(), 10.dp())
+        isClickable = true
+        setOnClickListener { action() }
+        layoutParams = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.WRAP_CONTENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT
+        ).apply {
+            topMargin = 12.dp()
+            marginStart = 18.dp()
+        }
+    }
+
+    private fun Int.dp(): Int = (this * resources.displayMetrics.density).toInt()
 }

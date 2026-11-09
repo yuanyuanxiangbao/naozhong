@@ -45,6 +45,7 @@ class AlarmEditActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_alarm_edit)
+        findViewById<View>(android.R.id.content).applySystemBarsPadding()
 
         timeButton = findViewById(R.id.timeButton)
         labelInput = findViewById(R.id.labelInput)
@@ -108,8 +109,7 @@ class AlarmEditActivity : AppCompatActivity() {
             // 今天已经响过的闹钟不允许趁复查间隙关掉复查开关
             if (existing.isLockedToday()) {
                 confirmSwitch.isEnabled = false
-                confirmSwitch.text =
-                    getString(R.string.confirm_switch) + getString(R.string.confirm_locked_suffix)
+                findViewById<TextView>(R.id.confirmLockHint).visibility = View.VISIBLE
             }
         }
 
@@ -157,6 +157,7 @@ class AlarmEditActivity : AppCompatActivity() {
             enabled = true,
         )
         val next = NextTrigger.next(candidate, ZonedDateTime.now())
+        nextRingText.visibility = if (next == null) View.GONE else View.VISIBLE
         nextRingText.text = if (next == null) {
             ""
         } else {

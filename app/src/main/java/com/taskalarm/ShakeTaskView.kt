@@ -1,7 +1,7 @@
 package com.taskalarm
 
 import android.content.Context
-import android.graphics.Color
+import android.content.res.ColorStateList
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
@@ -11,6 +11,7 @@ import android.view.Gravity
 import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
+import androidx.core.content.ContextCompat
 import kotlin.math.sqrt
 
 class ShakeTaskView(
@@ -36,22 +37,29 @@ class ShakeTaskView(
 
         val title = TextView(context).apply {
             text = "用力摇动手机"
-            setTextColor(Color.parseColor("#F5F3FF"))
+            setTextColor(ContextCompat.getColor(context, R.color.ring_text))
             textSize = 22f
             gravity = Gravity.CENTER
+            letterSpacing = 0.04f
         }
         val subtitle = TextView(context).apply {
             text = "需要持续摇动 $seconds 秒"
-            setTextColor(Color.parseColor("#C9C4F2"))
-            textSize = 15f
+            setTextColor(ContextCompat.getColor(context, R.color.ring_text_dim))
+            textSize = 14f
             gravity = Gravity.CENTER
-            setPadding(0, 10, 0, 22)
+            setPadding(0, 10, 0, 26)
         }
         progressBar.max = 100
         progressBar.progress = 0
+        progressBar.progressTintList = ColorStateList.valueOf(
+            ContextCompat.getColor(context, R.color.ring_accent)
+        )
+        progressBar.backgroundTintList = ColorStateList.valueOf(
+            ContextCompat.getColor(context, R.color.ring_card)
+        )
         progressText.apply {
-            setTextColor(Color.parseColor("#F5F3FF"))
-            textSize = 18f
+            setTextColor(ContextCompat.getColor(context, R.color.ring_text))
+            textSize = 16f
             gravity = Gravity.CENTER
             setPadding(0, 16, 0, 0)
         }

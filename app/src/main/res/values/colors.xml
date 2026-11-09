@@ -1,13 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="bg">#FFF7F7FA</color>
+    <color name="bg">#FFF5F4FA</color>
     <color name="surface">#FFFFFFFF</color>
+    <color name="surface_variant">#FFEFEDF8</color>
     <color name="primary">#FF5B4CDB</color>
-    <color name="primary_dark">#FF3A2FB0</color>
-    <color name="text_primary">#FF1B1B1F</color>
-    <color name="text_secondary">#FF6B6B76</color>
-    <color name="ring_bg">#FF0E0B1F</color>
-    <color name="ring_text">#FFF5F3FF</color>
-    <color name="danger">#FFD64545</color>
-    <color name="success">#FF2E9E5B</color>
+    <color name="primary_dark">#FF4335B8</color>
+    <color name="primary_soft">#FFEDEAFC</color>
+    <color name="text_primary">#FF17161C</color>
+    <color name="text_secondary">#FF6B6779</color>
+    <color name="text_tertiary">#FF9C98A8</color>
+    <color name="divider">#FFE8E5F1</color>
+    <color name="danger">#FFC9453D</color>
+    <color name="danger_soft">#FFFCECEB</color>
+    <color name="success">#FF2C8F57</color>
+    <color name="success_soft">#FFE9F5EE</color>
+    <color name="white">#FFFFFFFF</color>
+
+    <color name="ring_bg">#FF0D0B18</color>
+    <color name="ring_bg_top">#FF1B1433</color>
+    <color name="ring_text">#FFF6F4FF</color>
+    <color name="ring_text_dim">#FFB4ACD6</color>
+    <color name="ring_card">#FF1C1830</color>
+    <color name="ring_accent">#FF8E7DF7</color>
 </resources>

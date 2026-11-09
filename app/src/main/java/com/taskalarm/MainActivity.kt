@@ -20,7 +20,7 @@ import com.google.android.material.switchmaterial.SwitchMaterial
 
 class MainActivity : AppCompatActivity() {
     private lateinit var listView: ListView
-    private lateinit var emptyText: TextView
+    private lateinit var emptyText: View
     private lateinit var permissionBanner: TextView
     private lateinit var adapter: AlarmAdapter
     private var alarms: MutableList<Alarm> = mutableListOf()
@@ -28,6 +28,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        findViewById<View>(android.R.id.content).applySystemBarsPadding()
 
         listView = findViewById(R.id.alarmList)
         emptyText = findViewById(R.id.emptyText)
@@ -122,8 +123,15 @@ class MainActivity : AppCompatActivity() {
                     .inflate(R.layout.item_alarm, parent, false)
             val alarm = alarms[position]
 
-            view.findViewById<TextView>(R.id.alarmTime).text =
-                "%02d:%02d".format(alarm.hour, alarm.minute)
+            view.findViewById<TextView>(R.id.alarmTime).apply {
+                text = "%02d:%02d".format(alarm.hour, alarm.minute)
+                setTextColor(
+                    ContextCompat.getColor(
+                        this@MainActivity,
+                        if (alarm.enabled) R.color.text_primary else R.color.text_tertiary
+                    )
+                )
+            }
             val suffix = if (alarm.enabled) "" else " · 已关闭"
             val confirm = if (alarm.confirmEnabled && alarm.confirmCount > 0) {
                 " · ${alarm.confirmText()}"

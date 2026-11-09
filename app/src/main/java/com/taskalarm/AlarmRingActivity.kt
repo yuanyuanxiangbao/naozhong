@@ -46,6 +46,7 @@ class AlarmRingActivity : AppCompatActivity() {
                 WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
         )
         setContentView(R.layout.activity_alarm_ring)
+        findViewById<android.view.View>(android.R.id.content).applySystemBarsPadding()
 
         taskContainer = findViewById(R.id.taskContainer)
         taskStatus = findViewById(R.id.taskStatus)

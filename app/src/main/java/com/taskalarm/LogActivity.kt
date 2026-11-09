@@ -19,6 +19,7 @@ class LogActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_log)
+        findViewById<View>(android.R.id.content).applySystemBarsPadding()
 
         listView = findViewById(R.id.logList)
         emptyView = findViewById(R.id.logEmpty)
@@ -60,17 +61,12 @@ class LogActivity : AppCompatActivity() {
 
         override fun getView(position: Int, convertView: View?, parent: ViewGroup?): View {
             val view = convertView ?: LayoutInflater.from(this@LogActivity)
-                .inflate(android.R.layout.simple_list_item_2, parent, false)
+                .inflate(R.layout.item_log, parent, false)
             val entry = entries[position]
-            view.findViewById<TextView>(android.R.id.text1).apply {
-                text = "${entry.timeText()}  ${entry.event}"
-                setTextColor(getColor(R.color.text_primary))
-                textSize = 15f
-            }
-            view.findViewById<TextView>(android.R.id.text2).apply {
+            view.findViewById<TextView>(R.id.logTime).text = entry.timeText()
+            view.findViewById<TextView>(R.id.logEvent).text = entry.event
+            view.findViewById<TextView>(R.id.logDetail).apply {
                 text = entry.detail
-                setTextColor(getColor(R.color.text_secondary))
-                textSize = 13f
                 visibility = if (entry.detail.isBlank()) View.GONE else View.VISIBLE
             }
             return view
