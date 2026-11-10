@@ -72,4 +72,19 @@
         android:text="@string/solve_to_dismiss"
         android:textColor="@color/ring_text_dim"
         android:textSize="13sp" />
+
+    <TextView
+        android:id="@+id/wakeEntry"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="14dp"
+        android:alpha="0.55"
+        android:paddingStart="16dp"
+        android:paddingTop="10dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="10dp"
+        android:text="@string/wake_entry"
+        android:textColor="@color/ring_text_dim"
+        android:textSize="12sp" />
 </LinearLayout>

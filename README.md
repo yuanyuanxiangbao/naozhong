@@ -92,7 +92,8 @@ app/src/main/java/com/taskalarm/
 ├── AlarmEditActivity.kt  新建与编辑
 ├── PermissionActivity.kt 权限检查
 ├── LogActivity.kt        运行日志
-└── DiagLog.kt            日志存储
+├── DiagLog.kt            日志存储
+└── LogExportReceiver.kt  adb 日志导出入口
 ```
 
 ## 单元测试
@@ -102,6 +103,17 @@ app/src/main/java/com/taskalarm/
 ```
 
 覆盖下一次响铃时间计算和复查轮次计算。
+
+## 调试日志导出
+
+应用内日志页最多保留 300 条。需要一次性取走全部记录时，用广播触发导出，再直接拉文件，不用截图：
+
+```
+adb shell am broadcast -n com.taskalarm/.LogExportReceiver -a com.taskalarm.DUMP_LOG
+adb pull /sdcard/Android/data/com.taskalarm/files/diag_log.json
+```
+
+导出的是 JSON 数组，按时间升序，字段 `t` 为毫秒时间戳，`e` 为事件，`d` 为细节。应用处于未启动状态时，广播需要加 `--include-stopped-packages`。
 
 ## 已知限制
 

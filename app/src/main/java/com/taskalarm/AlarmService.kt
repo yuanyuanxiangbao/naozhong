@@ -22,6 +22,7 @@ class AlarmService : Service() {
     companion object {
         const val ACTION_START = "com.taskalarm.service.START"
         const val ACTION_TASK_DONE = "com.taskalarm.service.TASK_DONE"
+        const val ACTION_GIVE_UP = "com.taskalarm.service.GIVE_UP"
         const val EXTRA_ID = "alarm_id"
         const val EXTRA_WINDOW = "alarm_window"
         const val EXTRA_ROUND = "alarm_round"
@@ -40,7 +41,8 @@ class AlarmService : Service() {
 
     private val screenGuard = object : Runnable {
         override fun run() {
-            if (player != null && currentId >= 0 && !AlarmRingActivity.visible) {
+            val busy = AlarmRingActivity.visible || WakeConfirmActivity.visible
+            if (player != null && currentId >= 0 && !busy) {
                 launchRingScreen(currentId, currentRound)
             }
             handler.postDelayed(this, 5000)
@@ -70,6 +72,18 @@ class AlarmService : Service() {
         when (intent?.action) {
             ACTION_TASK_DONE -> {
                 handleTaskDone(intent)
+                return START_NOT_STICKY
+            }
+
+            ACTION_GIVE_UP -> {
+                val id = intent.getIntExtra(EXTRA_ID, currentId)
+                if (id >= 0) {
+                    AlarmScheduler.cancelConfirm(this, id)
+                    AlarmStore.clearConfirm(this)
+                    NotificationHelper.cancelConfirm(this)
+                    DiagLog.record(this, "确认已起床", "id=$id 结束今天剩余复查")
+                }
+                stopRinging()
                 return START_NOT_STICKY
             }
 

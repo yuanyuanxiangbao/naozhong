@@ -53,6 +53,10 @@ object DiagLog {
         prefs(context).edit().remove(KEY).apply()
     }
 
+    // 原样导出全部记录，供 adb 直接取走，不用再靠截图认字
+    @Synchronized
+    fun exportJson(context: Context): String = loadArray(context).toString(2)
+
     fun formatTime(millis: Long): String =
         FORMAT.format(Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()))
 
