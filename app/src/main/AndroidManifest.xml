@@ -47,14 +47,6 @@
             android:theme="@style/Theme.TaskAlarm.Ring" />
 
         <activity
-            android:name=".WakeConfirmActivity"
-            android:exported="false"
-            android:excludeFromRecents="true"
-            android:showWhenLocked="true"
-            android:turnScreenOn="true"
-            android:theme="@style/Theme.TaskAlarm.Ring" />
-
-        <activity
             android:name=".PermissionActivity"
             android:exported="false" />
 

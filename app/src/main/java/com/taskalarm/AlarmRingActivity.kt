@@ -13,7 +13,6 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 
 class AlarmRingActivity : AppCompatActivity() {
@@ -41,12 +40,6 @@ class AlarmRingActivity : AppCompatActivity() {
     private var closing = false
     private var breathe: ObjectAnimator? = null
 
-    private val wakeLauncher = registerForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        if (result.resultCode == RESULT_OK) finishAndRemoveTask()
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setShowWhenLocked(true)
@@ -70,9 +63,6 @@ class AlarmRingActivity : AppCompatActivity() {
                 Toast.makeText(this@AlarmRingActivity, R.string.solve_to_dismiss, Toast.LENGTH_SHORT).show()
             }
         })
-        findViewById<TextView>(R.id.wakeEntry).setOnClickListener {
-            wakeLauncher.launch(Intent(this, WakeConfirmActivity::class.java))
-        }
         loadAlarm(intent)
         playEnterAnimation()
     }
