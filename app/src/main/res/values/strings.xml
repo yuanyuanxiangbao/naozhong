@@ -64,6 +64,15 @@
     <string name="open_settings">去设置</string>
     <string name="ringing">闹钟响铃中</string>
     <string name="solve_to_dismiss">完成全部任务后闹钟会自动关闭</string>
+    <string name="ring_start_desc">点一下按钮，铃声立刻停，然后开始答题</string>
+    <string name="ring_start_btn">开始答题</string>
+    <string name="task_time_left">剩余 %1$d 秒，超时铃声恢复</string>
+    <string name="task_timeout">答题超时，铃声恢复</string>
+    <string name="wake_confirm_title">你真的起来了吗？</string>
+    <string name="wake_confirm_hint">%1$d 秒内点确定，否则铃声恢复</string>
+    <string name="wake_confirm_btn">确定，我已经起床</string>
+    <string name="wake_confirm_footer">最后一轮复查，确认后今天的闹钟结束</string>
+    <string name="wake_confirm_timeout">确认超时，回到答题</string>
     <string name="task_progress">任务进度</string>
     <string name="shake_hint">用力摇动手机</string>
     <string name="shake_progress">已完成 %1$d%%</string>

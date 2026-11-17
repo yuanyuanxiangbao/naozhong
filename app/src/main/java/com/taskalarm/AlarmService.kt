@@ -22,6 +22,8 @@ class AlarmService : Service() {
     companion object {
         const val ACTION_START = "com.taskalarm.service.START"
         const val ACTION_TASK_DONE = "com.taskalarm.service.TASK_DONE"
+        const val ACTION_MUTE = "com.taskalarm.service.MUTE"
+        const val ACTION_RESUME = "com.taskalarm.service.RESUME"
         const val EXTRA_ID = "alarm_id"
         const val EXTRA_WINDOW = "alarm_window"
         const val EXTRA_ROUND = "alarm_round"
@@ -35,6 +37,7 @@ class AlarmService : Service() {
     private var currentId = -1
     private var currentRound = 0
     private var currentWindow = -1L
+    private var muted = false
     private var screenLock: PowerManager.WakeLock? = null
     private var screenLaunchLogged = false
 
@@ -55,7 +58,7 @@ class AlarmService : Service() {
     private val handler = Handler(Looper.getMainLooper())
     private val volumeGuard = object : Runnable {
         override fun run() {
-            enforceAlarmVolume()
+            if (!muted) enforceAlarmVolume()
             handler.postDelayed(this, 2000)
         }
     }
@@ -71,6 +74,26 @@ class AlarmService : Service() {
             ACTION_TASK_DONE -> {
                 handleTaskDone(intent)
                 return START_NOT_STICKY
+            }
+
+            ACTION_MUTE -> {
+                if (player != null) {
+                    muted = true
+                    stopSound()
+                    DiagLog.record(this, "答题静音", "id=$currentId")
+                }
+                return START_STICKY
+            }
+
+            ACTION_RESUME -> {
+                val id = intent.getIntExtra(EXTRA_ID, currentId)
+                val alarm = if (id >= 0 && id == currentId) AlarmStore.find(this, id) else null
+                if (muted && alarm != null && player == null) {
+                    muted = false
+                    startSound(alarm)
+                    DiagLog.record(this, "恢复铃声", "id=$id")
+                }
+                return START_STICKY
             }
 
             ACTION_START -> {
@@ -110,6 +133,7 @@ class AlarmService : Service() {
         currentId = id
         currentRound = round
         currentWindow = window
+        muted = false
         screenLaunchLogged = false
         val detail = if (round > 0) {
             "%02d:%02d 第 %d 次复查".format(alarm.hour, alarm.minute, round)
@@ -322,6 +346,7 @@ class AlarmService : Service() {
     private fun stopRinging() {
         handler.removeCallbacks(volumeGuard)
         handler.removeCallbacks(screenGuard)
+        muted = false
         restoreAlarmVolume()
         stopSound()
         releaseScreenLock()
