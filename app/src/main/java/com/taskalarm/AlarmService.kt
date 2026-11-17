@@ -24,6 +24,7 @@ class AlarmService : Service() {
         const val ACTION_TASK_DONE = "com.taskalarm.service.TASK_DONE"
         const val ACTION_MUTE = "com.taskalarm.service.MUTE"
         const val ACTION_RESUME = "com.taskalarm.service.RESUME"
+        const val ACTION_CONFIRM_WAKE = "com.taskalarm.service.CONFIRM_WAKE"
         const val EXTRA_ID = "alarm_id"
         const val EXTRA_WINDOW = "alarm_window"
         const val EXTRA_ROUND = "alarm_round"
@@ -94,6 +95,27 @@ class AlarmService : Service() {
                     DiagLog.record(this, "恢复铃声", "id=$id")
                 }
                 return START_STICKY
+            }
+
+            ACTION_CONFIRM_WAKE -> {
+                val id = intent.getIntExtra(EXTRA_ID, currentId)
+                val round = intent.getIntExtra(EXTRA_ROUND, currentRound)
+                val alarm = if (id >= 0) AlarmStore.find(this, id) else null
+                if (alarm != null) {
+                    val now = System.currentTimeMillis()
+                    val window = currentWindow.takeIf { it > 0 } ?: now
+                    val deadline = ConfirmPlan.deadline(now, alarm)
+                    AlarmStore.setConfirm(this, id, window, deadline, ConfirmPlan.EXTRA_ROUNDS, round + 1)
+                    AlarmStore.setConfirmExtra(this, ConfirmPlan.EXTRA_ROUNDS)
+                    AlarmScheduler.scheduleFollowUp(this, id, round + 1, window, deadline)
+                    NotificationHelper.showConfirm(this, alarm, round + 1, deadline)
+                    DiagLog.record(
+                        this, "确认已起床，追加防回睡复查",
+                        "id=$id 共 ${ConfirmPlan.EXTRA_ROUNDS} 轮"
+                    )
+                }
+                stopRinging()
+                return START_NOT_STICKY
             }
 
             ACTION_START -> {
@@ -231,6 +253,11 @@ class AlarmService : Service() {
             stopRinging()
             return
         }
+        val extra = AlarmStore.confirmExtra(this)
+        if (extra > 0) {
+            handleExtraDone(id, alarm, round, extra)
+            return
+        }
         val step = ConfirmPlan.next(alarm, round, AlarmStore.confirmLeft(this))
         if (step == null) {
             finishAlarm(id, alarm)
@@ -248,6 +275,24 @@ class AlarmService : Service() {
                 alarm.hour, alarm.minute, step.round, alarm.confirmMinutes
             )
         )
+        stopRinging()
+    }
+
+    // 确认之后的防回睡轮次：答完一轮再排下一轮，最后一轮才结束今天
+    private fun handleExtraDone(id: Int, alarm: Alarm, round: Int, extra: Int) {
+        val left = extra - 1
+        if (left <= 0) {
+            finishAlarm(id, alarm)
+            return
+        }
+        val now = System.currentTimeMillis()
+        val window = currentWindow.takeIf { it > 0 } ?: now
+        val deadline = ConfirmPlan.deadline(now, alarm)
+        AlarmStore.setConfirm(this, id, window, deadline, left, round + 1)
+        AlarmStore.setConfirmExtra(this, left)
+        AlarmScheduler.scheduleFollowUp(this, id, round + 1, window, deadline)
+        NotificationHelper.showConfirm(this, alarm, round + 1, deadline)
+        DiagLog.record(this, "防回睡复查", "id=$id 第 ${round + 1} 次，还剩 $left 轮")
         stopRinging()
     }
 

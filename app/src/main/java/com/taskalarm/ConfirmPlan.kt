@@ -2,6 +2,9 @@ package com.taskalarm
 
 // 复查只关心“还剩几轮、下一轮是第几次”，与 Android 状态无关，便于单测
 object ConfirmPlan {
+    // 起床确认之后再追加的复查轮数，专门用来抓“确认完又睡回去”
+    const val EXTRA_ROUNDS = 3
+
     data class Step(val left: Int, val round: Int)
 
     fun next(alarm: Alarm, round: Int, left: Int): Step? {

@@ -14,6 +14,7 @@ object AlarmStore {
     private const val KEY_CONFIRM_DEADLINE = "confirm_deadline"
     private const val KEY_CONFIRM_LEFT = "confirm_left"
     private const val KEY_CONFIRM_ROUND = "confirm_round"
+    private const val KEY_CONFIRM_EXTRA = "confirm_extra"
 
     private fun prefs(context: Context) =
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
@@ -123,6 +124,13 @@ object AlarmStore {
 
     fun confirmRound(context: Context): Int = prefs(context).getInt(KEY_CONFIRM_ROUND, 0)
 
+    // 起床确认之后的追加轮数，大于 0 表示正处于防回睡复查阶段
+    fun confirmExtra(context: Context): Int = prefs(context).getInt(KEY_CONFIRM_EXTRA, 0)
+
+    fun setConfirmExtra(context: Context, extra: Int) {
+        prefs(context).edit().putInt(KEY_CONFIRM_EXTRA, extra).commit()
+    }
+
     fun clearConfirm(context: Context) {
         prefs(context).edit()
             .remove(KEY_CONFIRM_ID)
@@ -130,6 +138,7 @@ object AlarmStore {
             .remove(KEY_CONFIRM_DEADLINE)
             .remove(KEY_CONFIRM_LEFT)
             .remove(KEY_CONFIRM_ROUND)
+            .remove(KEY_CONFIRM_EXTRA)
             .commit()
     }
 }

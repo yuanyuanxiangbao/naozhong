@@ -295,21 +295,23 @@ class AlarmRingActivity : AppCompatActivity() {
         }
     }
 
-    // 任务全部完成才进入下一步；最后一轮先弹起床确认，其余轮次直接进入复查
+    // 任务全部完成才进入下一步；最后一轮配置原本要收尾，现在先弹起床确认
     private fun finishTasks() {
         if (closing) return
         closing = true
         handler.removeCallbacks(taskTicker)
         taskContainer.removeAllViews()
         val alarm = currentAlarm
+        val extra = AlarmStore.confirmExtra(this)
         val next = if (alarm != null) ConfirmPlan.next(alarm, currentRound, AlarmStore.confirmLeft(this)) else null
         DiagLog.record(this, "任务完成", "第 $currentRound 次，id=$alarmId")
-        if (alarm != null && alarm.confirmEnabled && next == null) {
+        // 确认页只在配置的最后一轮弹一次，追加的防回睡轮次不再重复弹
+        if (alarm != null && alarm.confirmEnabled && extra <= 0 && next == null) {
             showConfirm()
             return
         }
-        taskStatus.text = if (next != null) {
-            getString(R.string.task_done_confirm, alarm!!.confirmMinutes)
+        taskStatus.text = if (alarm != null && (extra > 0 || next != null)) {
+            getString(R.string.task_done_confirm, alarm.confirmMinutes)
         } else {
             getString(R.string.task_done)
         }
@@ -319,7 +321,7 @@ class AlarmRingActivity : AppCompatActivity() {
     private fun showConfirm() {
         taskCard.visibility = View.GONE
         confirmCard.visibility = View.VISIBLE
-        taskStatus.text = getString(R.string.wake_confirm_footer)
+        taskStatus.text = getString(R.string.wake_confirm_footer, ConfirmPlan.EXTRA_ROUNDS)
         confirmDeadline = SystemClock.elapsedRealtime() + CONFIRM_MS
         confirmHint.text = getString(R.string.wake_confirm_hint, (CONFIRM_MS / 1000).toInt())
         handler.removeCallbacks(confirmTicker)
@@ -327,11 +329,22 @@ class AlarmRingActivity : AppCompatActivity() {
         DiagLog.record(this, "弹出起床确认", "第 $currentRound 次，限时 5 秒")
     }
 
+    // 确认后不结束今天，交给服务追加防回睡复查
     private fun confirmWake() {
         if (finishing) return
+        finishing = true
         handler.removeCallbacks(confirmTicker)
         DiagLog.record(this, "确认已起床", "第 $currentRound 次，id=$alarmId")
-        sendTaskDone()
+        startService(
+            Intent(this, AlarmService::class.java)
+                .setAction(AlarmService.ACTION_CONFIRM_WAKE)
+                .putExtra(AlarmService.EXTRA_ID, alarmId)
+                .putExtra(AlarmService.EXTRA_ROUND, currentRound)
+        )
+        AlarmStore.clearRinging(this)
+        window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        taskStatus.text = getString(R.string.wake_confirmed_extra, ConfirmPlan.EXTRA_ROUNDS)
+        taskStatus.postDelayed({ finishAndRemoveTask() }, 800)
     }
 
     private fun sendTaskDone() {
